@@ -1,37 +1,37 @@
 function [q, info] = IK2R_Numerical(p, param, options)
-%IK2R_NUMERICAL Numerical inverse kinematics template for a planar 2R robot.
+%IK2R_NUMERICAL 平面 2R 机械臂数值逆运动学模板。
 %
-% This is a scaffold for trying numerical IK methods such as:
-%   - Newton-Raphson
-%   - Jacobian pseudo-inverse
-%   - Jacobian transpose
-%   - Damped least squares
+% 这是一个用于尝试数值逆解方法的骨架文件，例如：
+%   - 牛顿迭代法
+%   - Jacobian 伪逆法
+%   - Jacobian 转置法
+%   - 阻尼最小二乘法
 %
-% Inputs
-% ------
+% 输入
+% ----
 % p : double, size (2,1) or (1,2)
-%     Target end-effector position [x; y].
+%     末端目标位置 [x; y]。
 %
 % param : struct
-%     Robot parameters. Expected fields:
+%     机器人参数结构体，期望包含：
 %         l1, l2
 %
 % options : struct, optional
-%     Numerical solver settings:
-%         q0          : initial guess, size (2,1)
-%         max_iter    : maximum iteration count
-%         tol         : position error tolerance
-%         step_size   : step size / gain
+%     数值求解配置：
+%         q0          : 初值，大小为 (2,1)
+%         max_iter    : 最大迭代次数
+%         tol         : 位置误差容差
+%         step_size   : 步长 / 增益
 %         method      : 'pinv', 'transpose', or 'dls'
-%         lambda      : damping factor for DLS
+%         lambda      : DLS 阻尼系数
 %
-% Outputs
-% -------
+% 输出
+% ----
 % q : double, size (2,1)
-%     Estimated joint solution.
+%     求得的关节解。
 %
 % info : struct
-%     Solver diagnostics:
+%     求解过程信息：
 %         success
 %         iterations
 %         final_error
@@ -85,7 +85,7 @@ function [q, info] = IK2R_Numerical(p, param, options)
     info.method = options.method;
 
     % ============================================================
-    % Iterative solver loop
+    % 迭代求解主循环
     % ============================================================
     for iter = 1:options.max_iter
         p_hat = FK2R_Analytic(q, param);
@@ -103,37 +103,37 @@ function [q, info] = IK2R_Numerical(p, param, options)
         J = Jacobian2R_Analytic(q, param);
 
         % --------------------------------------------------------
-        % TODO: choose the update law you want to study
+        % TODO：选择你想研究的更新律
         %
-        % Common options:
-        %   1) Newton / pseudo-inverse:
+        % 常见选项：
+        %   1）牛顿法 / 伪逆法：
         %        dq = J \ e
         %        dq = pinv(J) * e
         %
-        %   2) Jacobian transpose:
+        %   2）Jacobian 转置法：
         %        dq = J' * e
         %
-        %   3) Damped least squares:
+        %   3）阻尼最小二乘法：
         %        dq = J' * inv(J*J' + lambda^2*I) * e
         %
-        % Then update:
+        % 然后更新：
         %        q = q + step_size * dq
         % --------------------------------------------------------
 
-        dq = zeros(2, 1);  % TODO: replace with your chosen update rule
+        dq = zeros(2, 1);  % TODO: 替换为你选定的更新公式
 
-        % TODO: optionally wrap the joint angles after each step
+        % TODO：可选地在每一步后对关节角做 wrap
         % q = wrapToPiLocal(q + options.step_size * dq);
 
         q = q + options.step_size * dq;
     end
 
     % ============================================================
-    % Optional post-processing
+    % 可选后处理
     % ============================================================
     % TODO:
-    %   You may want to clamp q, wrap angles, or re-evaluate the final
-    %   forward kinematics to report a more detailed residual.
+    %   你可以选择对 q 做限幅、角度 wrap，或者重新计算末端位置，
+    %   以便输出更详细的残差信息。
 
     if ~info.success
         info.final_error = norm(p - FK2R_Analytic(q, param));
@@ -141,7 +141,7 @@ function [q, info] = IK2R_Numerical(p, param, options)
 end
 
 % -------------------------------------------------------------------------
-% Local helper: wrap angle to [-pi, pi]
+% 局部函数：将角度包裹到 [-pi, pi]
 % -------------------------------------------------------------------------
 function a = wrapToPiLocal(a)
     a = mod(a + pi, 2*pi) - pi;

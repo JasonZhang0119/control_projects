@@ -1,18 +1,18 @@
 function [q, q_dot, q_ddot] = EvalTrapezoidSegment(seg, t)
-%EVALTRAPEZOIDSEGMENT Template for evaluating one trapezoidal segment.
+%EVALTRAPEZOIDSEGMENT 单段梯形轨迹评估模板。
 %
-% Inputs
-% ------
+% 输入
+% ----
 % seg : struct
-%     Segment structure created by CreateMultiSegmentTrapezoidal.
+%     由 CreateMultiSegmentTrapezoidal 生成的段结构体。
 %
 % t : double
-%     Query time.
+%     查询时刻。
 %
-% Outputs
-% -------
+% 输出
+% ----
 % q, q_dot, q_ddot : double
-%     Position, velocity, and acceleration at time t.
+%     时刻 t 的位置、速度和加速度。
 
     if ~isfield(seg, 't0') || ~isfield(seg, 'tf')
         error('EvalTrapezoidSegment:InvalidSegment', ...
@@ -28,39 +28,41 @@ function [q, q_dot, q_ddot] = EvalTrapezoidSegment(seg, t)
     end
 
     % ============================================================
-    % Step 1: Read the segment profile
+    % Step 1：读取段轮廓参数
     % ============================================================
     %
     % TODO:
-    %   Extract the profile parameters you store in seg.profile.
-    %   Suggested fields may include:
+    %   提取你存放在 seg.profile 中的轮廓参数。
+    %   建议字段可能包括：
     %       t_acc, t_flat, t_dec, v_peak, a_max, direction, distance
     %
-    %   Example:
+    %   示例：
     %       profile = seg.profile;
     %
-    profile = seg.profile; %#ok<NASGU>
+
+    
+    profile = seg.profile; 
 
     % ============================================================
-    % Step 2: Evaluate the motion phase
+    % Step 2：判断当前所处的运动阶段并计算轨迹
     % ============================================================
     %
     % TODO:
-    %   Decide whether tau is in:
-    %       - acceleration phase
-    %       - cruise phase
-    %       - deceleration phase
+    %   判断 tau 当前处于：
+    %       - 加速段
+    %       - 匀速段
+    %       - 减速段
     %
-    %   Then compute:
+    %   然后计算：
     %       q(t), q_dot(t), q_ddot(t)
     %
-    %   Common approach:
-    %       1) Compute local scalar progress s(t)
-    %       2) Map s(t) to joint vector along the segment direction
+    %   常见做法：
+    %       1）先计算局部标量进度 s(t)
+    %       2）再把 s(t) 映射到该段的关节向量方向上
     %
     q = [];
     q_dot = [];
     q_ddot = [];
 
-    % TODO: Replace the placeholders above with the real formula.
+    % TODO：把上面的占位符替换成真实公式。
 end
