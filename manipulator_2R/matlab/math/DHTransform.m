@@ -8,7 +8,7 @@ function T = DHTransform(a, alpha, d, theta, method)
 % d : double
 % theta : double
 % method : char
-%     'standard' or 'modified'
+%     'standard' or 'craig'
 %
 % Returns
 % -------
@@ -19,7 +19,7 @@ function T = DHTransform(a, alpha, d, theta, method)
 % standard:
 %   A = Rz(theta) * Tz(d) * Tx(a) * Rx(alpha)
 %
-% modified (Craig):
+% craig (Craig):
 %   A = Rx(alpha) * Tx(a) * Rz(theta) * Tz(d)
 
     if nargin < 5
@@ -42,6 +42,6 @@ function T = DHTransform(a, alpha, d, theta, method)
 
         otherwise
             error('DHTransform:UnknownMethod', ...
-                  'method must be ''standard'' or ''modified''.');
+                  'method must be ''standard'' or ''craig''.');
     end
 end

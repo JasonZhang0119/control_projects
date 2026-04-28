@@ -18,8 +18,8 @@ function J = JacobianFromTAll(T_all, joint_types, T_tool)
 % -------
 % J : double, size (6, n)
 %     空间几何 Jacobian。
-%     前 3 行为线速度 Jacobian Jv。
-%     后 3 行为角速度 Jacobian Jw。
+%     前 3 行为角速度 Jacobian Jw。
+%     后 3 行为线速度 Jacobian Jv。
 
     if nargin < 3
         T_tool = eye(4);
@@ -35,27 +35,27 @@ function J = JacobianFromTAll(T_all, joint_types, T_tool)
     T_0_n = T_all(:, :, end);
     T_0_tool = T_0_n * T_tool;
 
-    o_tool = T_0_tool(1:3, 4);
+    p_tool = T_0_tool(1:3, 4);
 
     J = zeros(6, n);
 
     for i = 1:n
         T_0_im1 = T_all(:, :, i);
 
-        o_i = T_0_im1(1:3, 4);
+        p_i = T_0_im1(1:3, 4);
         z_i = T_0_im1(1:3, 3);
 
         joint_type = upper(joint_types(i));
 
         if joint_type == 'R'
-            % TODO:
-            J(1:3, i) = ...
-            J(4:6, i) = ...
+            
+            J(1:3, i) = z_i;
+            J(4:6, i) = cross(z_i, (p_tool - p_i));
 
         elseif joint_type == 'P'
-            % TODO:
-            % J(1:3, i) = ...
-            % J(4:6, i) = ...
+            
+            J(1:3, i) = zeros(3, 1);
+            J(4:6, i) = z_i;
 
         else
             error('JacobianFromTAll:InvalidJointType', ...

@@ -47,7 +47,7 @@ function T_all = FK_DH(q, dh_table, joint_types, method)
 % method : char 或 string（可选）
 %     DH 建模方式：
 %         'standard' : 标准 DH（默认）
-%         'craig' 或 'modified' : 改进 DH（Craig）
+%         'craig' 或 'craig' : 改进 DH（Craig）
 %
 % 返回
 % -------

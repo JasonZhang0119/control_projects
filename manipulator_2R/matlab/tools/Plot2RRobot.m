@@ -1,16 +1,15 @@
 function h = Plot2RRobot(q, param, options, h)
 %PLOT2RROBOT 绘制或更新平面 2R 机械臂
 %
-% 参数
-% ----------
+% 输入
+% ----
 % q : double, size (2, 1)
-%     关节角向量 [q1; q2]，单位 rad。
+%     当前关节角向量 [q1; q2]，单位 rad
 %
 % param : struct
-%     机械臂参数结构体。
-%     需要包含：
-%         l1 : 第 1 根连杆长度
-%         l2 : 第 2 根连杆长度
+%     机械臂参数结构体，至少需要包含：
+%         l1 : 第一根连杆长度
+%         l2 : 第二根连杆长度
 %
 % options : struct, 可选
 %     绘图选项：
@@ -21,12 +20,12 @@ function h = Plot2RRobot(q, param, options, h)
 %         show_frame   : 是否显示坐标轴方向
 %
 % h : struct, 可选
-%     已有图形句柄。若传入，则更新已有图像。
+%     已有图形句柄结构体。若传入，则更新已有图像。
 %
-% 返回
-% -------
+% 输出
+% ----
 % h : struct
-%     图形句柄结构体，用于动画更新。
+%     图形句柄结构体，用于后续动画刷新
 
     if nargin < 3 || isempty(options)
         options = struct();
@@ -60,7 +59,7 @@ function h = Plot2RRobot(q, param, options, h)
 
     if numel(q) ~= 2
         error('Plot2RRobot:DimensionMismatch', ...
-              'q 必须为长度为 2 的关节角向量。');
+              'q 必须是长度为 2 的关节角向量。');
     end
 
     l1 = param.l1;
@@ -69,11 +68,10 @@ function h = Plot2RRobot(q, param, options, h)
     q1 = q(1);
     q2 = q(2);
 
+    % 机器人基座、肘部和末端位置
     p0 = [0; 0];
-
     p1 = [l1 * cos(q1);
           l1 * sin(q1)];
-
     pe = [l1 * cos(q1) + l2 * cos(q1 + q2);
           l1 * sin(q1) + l2 * sin(q1 + q2)];
 
@@ -94,17 +92,21 @@ function h = Plot2RRobot(q, param, options, h)
         axis equal;
         axis(options.axis_limit);
 
+        % 机械臂连线
         h.robot_line = plot(robot_x, robot_y, '-o', ...
             'LineWidth', 2, ...
             'MarkerSize', 6);
 
+        % 末端点
         h.ee_point = plot(pe(1), pe(2), 'o', ...
             'MarkerSize', 8, ...
             'LineWidth', 2);
 
+        % 实际末端轨迹
         h.ee_traj = plot(nan, nan, '--', ...
             'LineWidth', 1.5);
 
+        % 参考末端轨迹
         h.ee_ref_traj = plot(nan, nan, ':', ...
             'LineWidth', 1.5);
 
@@ -115,14 +117,17 @@ function h = Plot2RRobot(q, param, options, h)
         if options.show_frame
             frame_scale = 0.2;
 
+            % 基座坐标系方向
             h.frame0 = quiver(0, 0, frame_scale, 0, 0, ...
                 'LineWidth', 1.2);
 
+            % 第一连杆坐标系方向
             h.frame1 = quiver(p1(1), p1(2), ...
                 frame_scale * cos(q1), ...
                 frame_scale * sin(q1), ...
                 0, 'LineWidth', 1.2);
 
+            % 末端坐标系方向
             h.framee = quiver(pe(1), pe(2), ...
                 frame_scale * cos(q1 + q2), ...
                 frame_scale * sin(q1 + q2), ...

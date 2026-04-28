@@ -1,7 +1,7 @@
-function profile = CreateTrapezoidalProfile(q0, qf, a_max, t_total)
-%CREATETRAPEZOIDALPROFILE 基于给定总时间和加速度约束创建梯形速度轨迹
+function profile = CreateTrapezoidalProfile(q0, qf, v0, vf, a_max, t_total)
+%CREATETRAPEZOIDALPROFILE 创建带非零初末速度的梯形速度轨迹
 %
-% 参数
+% Parameters
 % ----------
 % q0 : double
 %     初始位置。
@@ -9,16 +9,22 @@ function profile = CreateTrapezoidalProfile(q0, qf, a_max, t_total)
 % qf : double
 %     终止位置。
 %
+% v0 : double
+%     初始速度。
+%
+% vf : double
+%     终止速度。
+%
 % a_max : double
-%     最大加速度，必须为正数。
+%     最大加速度幅值，必须为正数。
 %
 % t_total : double
-%     规定总运动时间，必须为正数。
+%     总运动时间，必须为正数。
 %
-% 返回
+% Returns
 % -------
 % profile : struct
-%     梯形/三角速度轨迹参数结构体。
+%     梯形速度轨迹参数。
 
     if a_max <= 0
         error('CreateTrapezoidalProfile:InvalidAcceleration', ...
@@ -31,103 +37,68 @@ function profile = CreateTrapezoidalProfile(q0, qf, a_max, t_total)
     end
 
     dq = qf - q0;
-    distance = abs(dq);
 
-    if distance < 1e-12
-        profile.q0 = q0;
-        profile.qf = qf;
-        profile.direction = 1;
-        profile.distance = 0;
-        profile.a_max = abs(a_max);
-        profile.t_acc = 0;
-        profile.t_flat = t_total;
-        profile.t_dec = 0;
-        profile.t_total = t_total;
-        profile.v_peak = 0;
-        profile.is_triangle = false;
-        profile.a_min = 0;
-        return;
+    if abs(dq) < 1e-12
+        direction = 1;
+    else
+        direction = sign(dq);
     end
 
-    direction = sign(dq);
+    s = abs(dq);
     a = abs(a_max);
     T = t_total;
 
-    % ============================================================
-    % Step 1：可行性检查
-    % ============================================================
-    % 在给定总时间 T 内，若采用最快的对称三角速度曲线：
-    %
-    %     distance = a_min * (T/2)^2
-    %
-    % 因此：
-    %
-    %     a_min = 4 * distance / T^2
-    %
-    % 若 a < a_min，则说明即使全程加速再减速，也无法在规定时间内到达。
+    % 转换到正运动方向坐标
+    u0 = direction * v0;
+    uf = direction * vf;
 
-    a_min = 4 * distance / T^2;
+    % 本实现假设轨迹整体沿 q0 -> qf 方向运动，
+    % 且巡航速度 vc 不小于初末速度。
+    A = a * T + u0 + uf;
 
-    if a < a_min - 1e-12
-        error('CreateTrapezoidalProfile:InfeasibleAcceleration', ...
-              ['给定加速度过小，无法在规定时间内完成轨迹。' ...
-               ' 最小所需加速度为 %.6g，当前 a_max 为 %.6g。'], ...
-               a_min, a);
-    end
-
-    % ============================================================
-    % Step 2：求解加速段时间 t_b
-    % ============================================================
-    % 对称加减速下：
-    %
-    %     distance = a * t_b * (T - t_b)
-    %
-    % 等价于：
-    %
-    %     t_b^2 - T*t_b + distance/a = 0
-    %
-    % 解为：
-    %
-    %     t_b = (T - sqrt(T^2 - 4*distance/a)) / 2
-    %
-    % 选择较小根，保证 t_b <= T/2。
-
-    discriminant = T^2 - 4 * distance / a;
+    discriminant = A^2 - 2 * (u0^2 + uf^2 + 2 * a * s);
 
     if discriminant < -1e-12
-        error('CreateTrapezoidalProfile:InvalidDiscriminant', ...
-              '判别式为负，无法生成实数轨迹。');
+        error('CreateTrapezoidalProfile:InfeasibleTrajectory', ...
+              '给定 T、a_max、q0、qf、v0、vf 下不存在实数梯形轨迹。');
     end
 
     discriminant = max(discriminant, 0);
 
-    t_b = 0.5 * (T - sqrt(discriminant));
+    vc = 0.5 * (A - sqrt(discriminant));
 
-    % ============================================================
-    % Step 3：计算轨迹参数
-    % ============================================================
-
-    t_acc = t_b;
-    t_dec = t_b;
-    t_flat = T - 2 * t_b;
-    v_peak = a * t_b;
-
-    if abs(t_flat) < 1e-12
-        t_flat = 0;
+    if vc < max(u0, uf) - 1e-10
+        error('CreateTrapezoidalProfile:InvalidCruiseVelocity', ...
+              ['求得的巡航速度小于初末速度。该情况不满足标准“加速-匀速-减速”梯形假设，' ...
+               '可能需要使用减速-匀速-加速、三角型，或更一般的带约束轨迹规划。']);
     end
 
-    is_triangle = (t_flat == 0);
+    t_acc = (vc - u0) / a;
+    t_dec = (vc - uf) / a;
+    t_flat = T - t_acc - t_dec;
+
+    if t_acc < -1e-10 || t_dec < -1e-10 || t_flat < -1e-10
+        error('CreateTrapezoidalProfile:InvalidSegmentTime', ...
+              '计算得到的某个时间段为负，轨迹不可行。');
+    end
+
+    t_acc = max(t_acc, 0);
+    t_dec = max(t_dec, 0);
+    t_flat = max(t_flat, 0);
 
     profile.q0 = q0;
     profile.qf = qf;
+    profile.v0 = v0;
+    profile.vf = vf;
     profile.direction = direction;
-    profile.distance = distance;
+    profile.distance = s;
     profile.a_max = a;
+    profile.v_cruise = vc;
     profile.t_acc = t_acc;
     profile.t_flat = t_flat;
     profile.t_dec = t_dec;
     profile.t_total = T;
-    profile.v_peak = v_peak;
-    profile.is_triangle = is_triangle;
-    profile.a_min = a_min;
+    profile.t1 = t_acc;
+    profile.t2 = t_acc + t_flat;
+    profile.t3 = T;
 end

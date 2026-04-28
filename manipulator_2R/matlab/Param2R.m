@@ -6,7 +6,7 @@ function param = Param2R(method)
 % method : char 或 string
 %     DH 建模方式：
 %         'standard'  : 标准 DH
-%         'modified'  : 改进 DH（Craig）
+%         'craig'  : 改进 DH（Craig）
 %
 % 返回
 % -------
@@ -54,7 +54,7 @@ function param = Param2R(method)
             param.T_tool = eye(4);
 
         case 'craig'
-            % 对于平面 2R，modified 与 standard 数值相同
+            % 对于平面 2R，craig 与 standard 数值相同
             % 但语义不同（变换顺序不同）
             param.dh_table = [
                 0, 0, 0, 0;
@@ -65,7 +65,7 @@ function param = Param2R(method)
 
         otherwise
             error('Param2R:InvalidMethod', ...
-                  'method 必须为 ''standard'' 或 ''modified''');
+                  'method 必须为 ''standard'' 或 ''craig''');
     end
 
     % ===== 记录 DH 类型 =====

@@ -1,8 +1,4 @@
-﻿clear; clc; close all;
-
-root_dir = fileparts(mfilename('fullpath'));
-addpath(fullfile(root_dir, 'matlab'));
-addpath(fullfile(root_dir, 'matlab', 'cubic_spline'));
+clear; clc; close all;
 
 %% Trajectory waypoints
 q_waypoints = [
