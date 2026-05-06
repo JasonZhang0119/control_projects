@@ -184,12 +184,12 @@ grid on;
 legend('MT -> \omega_1  (motor-side, expect anti-resonance)', ...
        'MT -> \omega_2  (load-side, no finite anti-resonance)', ...
        'Location', 'best');
-
-% 5.3 零极点图，直接看 MT -> omega_1 的零点
-figure('Name', 'Pole-Zero Map for MT -> omega_1', 'Color', 'w');
-pzmap(sys_mech_omega1_tf);
-grid on;
-title('Pole-Zero Map of Mechanical Channel: MT -> \omega_1');
+% 
+% % 5.3 零极点图，直接看 MT -> omega_1 的零点
+% figure('Name', 'Pole-Zero Map for MT -> omega_1', 'Color', 'w');
+% pzmap(sys_mech_omega1_tf);
+% grid on;
+% title('Pole-Zero Map of Mechanical Channel: MT -> \omega_1');
 
 %% 6. Optional: Evaluate response near theoretical anti-resonance frequency
 % =========================================================================
