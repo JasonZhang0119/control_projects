@@ -17,7 +17,7 @@ pause;
 
 flush(sp);
 
-for k = 1:20
+for k = 1:200
     line = readline(sp);
     fprintf("[%03d] %s\n", k, strtrim(line));
 end

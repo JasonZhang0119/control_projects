@@ -1,5 +1,3 @@
-#include "app_bridge.h"
-
 #include "main.h"
 #include "usart.h"
 #include "gpio.h"
@@ -9,8 +7,25 @@
 
 #include <Eigen/Dense>
 
+#include "app_bridge.h"
+
+#include "signal_generator.hpp"
+
 namespace
 {
+
+using DataType = float;
+
+constexpr int Ny = 1;
+constexpr int Nu = 1;
+constexpr int NStair = 5;
+
+using YVector = Eigen::Matrix<DataType, Ny, 1>;
+using UVector = Eigen::Matrix<DataType, Nu, 1>;
+using StairTime = Eigen::Matrix<DataType, NStair, Nu>;
+using StairValue = Eigen::Matrix<DataType, NStair, Nu>;
+
+StairSignalGenerator<DataType, Ny, Nu, NStair> stair_gen;
 
 /**
  * @brief 通过 USART1 发送字符串。
@@ -23,11 +38,6 @@ namespace
  * Returns
  * -------
  * None
- *
- * Notes
- * -----
- * - 当前使用阻塞式 HAL_UART_Transmit。
- * - 超时时间为 10 ms，避免串口异常导致主循环永久阻塞。
  */
 void SendString(const char* msg)
 {
@@ -43,8 +53,28 @@ void SendString(const char* msg)
 
 void App_Init(void)
 {
-    SendString("app started\r\n");
+    StairTime timestamps;
+    StairValue values;
+
+    timestamps << 0.0f,
+                  1.0f,
+                  2.0f,
+                  3.0f,
+                  4.0f;
+
+    values << 0.0f,
+              200.0f,
+              0.0f,
+              -200.0f,
+              0.0f;
+
+    stair_gen.SetSamplingTime(0.1f);
+    stair_gen.SetStairInfo(timestamps, values);
+    stair_gen.Initialize();
+
+    SendString("stair generator started\r\n");
 }
+
 
 void App_Step(void)
 {
@@ -56,16 +86,19 @@ void App_Step(void)
     {
         last_tick = now_tick;
 
-        Eigen::Matrix<float, 2, 1> x;
-        Eigen::Matrix<float, 1, 2> k;
+        const YVector y_ref = YVector::Zero();
+        const YVector y = YVector::Zero();
 
-        x << 1.0f, 2.0f;
-        k << 3.0f, 4.0f;
+        UVector u_min;
+        UVector u_max;
 
-        const float u = (k * x)(0, 0);   // u = 3*1 + 4*2 = 11
+        u_min << -1000.0f;
+        u_max << 1000.0f;
 
-        const uint32_t time_ms = now_tick;
-        const int32_t u_milli = static_cast<int32_t>(u * 1000.0f);
+        const UVector u = stair_gen.Step(y_ref, y, u_min, u_max);
+
+        const int32_t u_cmd_permille =
+            static_cast<int32_t>(u(0, 0));
 
         char tx_buf[128];
 
@@ -73,8 +106,8 @@ void App_Step(void)
             tx_buf,
             sizeof(tx_buf),
             "%lu,%ld\r\n",
-            static_cast<unsigned long>(time_ms),
-            static_cast<long>(u_milli)
+            static_cast<unsigned long>(now_tick),
+            static_cast<long>(u_cmd_permille)
         );
 
         SendString(tx_buf);
