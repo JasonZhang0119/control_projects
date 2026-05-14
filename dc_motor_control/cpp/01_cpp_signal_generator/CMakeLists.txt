@@ -24,13 +24,16 @@ set(CMAKE_PROJECT_NAME 01_cpp_signal_generator)
 # Enable compile command to ease indexing with e.g. clangd
 set(CMAKE_EXPORT_COMPILE_COMMANDS TRUE)
 
+# Eigen path
+set(EIGEN3_INCLUDE_DIR "D:/third_party_libs/cpp/eigen-5.0.0")
+
+
 # Core project settings
 project(${CMAKE_PROJECT_NAME})
 message("Build type: " ${CMAKE_BUILD_TYPE})
 
 # Enable CMake support for ASM and C languages
 enable_language(C ASM)
-
 enable_language(CXX)
 
 # Create an executable object type
@@ -53,13 +56,18 @@ target_sources(${CMAKE_PROJECT_NAME} PRIVATE
 # Add include paths
 target_include_directories(${CMAKE_PROJECT_NAME} PRIVATE
     App/Inc
+    ${EIGEN3_INCLUDE_DIR}
     # Add user defined include paths
 )
 
 # Add project symbols (macros)
 target_compile_definitions(${CMAKE_PROJECT_NAME} PRIVATE
     # Add user defined symbols
+    EIGEN_NO_DEBUG
+    EIGEN_DONT_VECTORIZE
+    EIGEN_MAX_ALIGN_BYTES=0
 )
+
 
 # Remove wrong libob.a library dependency when using cpp files
 list(REMOVE_ITEM CMAKE_C_IMPLICIT_LINK_LIBRARIES ob)

@@ -7,6 +7,8 @@
 #include <cstdio>
 #include <cstring>
 
+#include <Eigen/Dense>
+
 namespace
 {
 
@@ -47,7 +49,6 @@ void App_Init(void)
 void App_Step(void)
 {
     static uint32_t last_tick = 0U;
-    static uint32_t sample_index = 0U;
 
     const uint32_t now_tick = HAL_GetTick();
 
@@ -55,28 +56,28 @@ void App_Step(void)
     {
         last_tick = now_tick;
 
+        Eigen::Matrix<float, 2, 1> x;
+        Eigen::Matrix<float, 1, 2> k;
+
+        x << 1.0f, 2.0f;
+        k << 3.0f, 4.0f;
+
+        const float u = (k * x)(0, 0);   // u = 3*1 + 4*2 = 11
+
         const uint32_t time_ms = now_tick;
-        const int32_t pwm_cmd_permille = 0;
-        const int32_t encoder_count = static_cast<int32_t>(sample_index * 10U);
-        const int32_t theta_mrad = static_cast<int32_t>(sample_index * 10U);
-        const int32_t omega_mrad_s = 1000;
+        const int32_t u_milli = static_cast<int32_t>(u * 1000.0f);
 
         char tx_buf[128];
 
         std::snprintf(
             tx_buf,
             sizeof(tx_buf),
-            "%lu,%ld,%ld,%ld,%ld\r\n",
+            "%lu,%ld\r\n",
             static_cast<unsigned long>(time_ms),
-            static_cast<long>(pwm_cmd_permille),
-            static_cast<long>(encoder_count),
-            static_cast<long>(theta_mrad),
-            static_cast<long>(omega_mrad_s)
+            static_cast<long>(u_milli)
         );
 
         SendString(tx_buf);
         HAL_GPIO_TogglePin(LED_RUN_GPIO_Port, LED_RUN_Pin);
-
-        sample_index++;
     }
 }
