@@ -117,23 +117,23 @@ int main(void)
     {
         last_tick = now_tick;
 
-        float time_s = 0.001f * (float)now_tick;
-        float pwm_cmd = 0.0f;
+        uint32_t time_ms = now_tick;
+        int32_t pwm_cmd_permille = 0;
         int32_t encoder_count = (int32_t)(sample_index * 10U);
-        float theta_rad = 0.01f * (float)sample_index;
-        float omega_rad_s = 1.0f;
+        int32_t theta_mrad = (int32_t)(sample_index * 10U);
+        int32_t omega_mrad_s = 1000;
 
         char tx_buf[128];
 
         snprintf(
             tx_buf,
             sizeof(tx_buf),
-            "%.3f,%.3f,%ld,%.6f,%.6f\r\n",
-            time_s,
-            pwm_cmd,
+            "%lu,%ld,%ld,%ld,%ld\r\n",
+            (unsigned long)time_ms,
+            (long)pwm_cmd_permille,
             (long)encoder_count,
-            theta_rad,
-            omega_rad_s
+            (long)theta_mrad,
+            (long)omega_mrad_s
         );
 
         UART_SendString(&huart1, tx_buf);
