@@ -10,3 +10,4 @@ dc_motor_control/tools/FlyMcu.exe
 
 
 dc_motor_control/doc/
+parallel_mpc_computation/build/
