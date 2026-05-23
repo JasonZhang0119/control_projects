@@ -13,11 +13,12 @@ extern "C" void TrajectoryTask(void* pv)
 
     for (;;) {
         ulTaskNotifyTake(pdTRUE, portMAX_DELAY);
+        ctx->uart_logger->SendString("trajectory notified\r\n");
 
         ctx->trajectory_generator->Set(ctx->position_meas, 
                                         ctx->position_ref);
         xQueueReset(ctx->trajectory_queue);
-        for (int i = 0; i < Config::kTrajectoryPoint; i++){
+        for (int i = 0; i < static_cast<int>(Config::kTrajectoryPoint); i++){
             float point = ctx->trajectory_generator->Next();
             xQueueSend(
                 ctx->trajectory_queue,

@@ -1,6 +1,5 @@
 #pragma once
 
-#include <cstdint>
 #ifdef __cplusplus
 
 #include <stdint.h>
@@ -24,7 +23,7 @@ namespace Config {
 
     static constexpr float kEncoderCountsPerRevolution = 390.0F;
 
-    static constexpr uint32_t kTrajectoryPoint = 10;
+    static constexpr uint32_t kTrajectoryPoint = 20;
 
     static constexpr float kPositionRefStepRadS = 5.0F;
     static constexpr float kPositionRefMinRadS = -30.0F;
@@ -37,7 +36,7 @@ struct SystemContext {
     EncoderReader* encoder;
     UartLogger* uart_logger;
 
-    FixedLengthPositionTrajectory trajectory_generator;
+    FixedLengthPositionTrajectory *trajectory_generator;
 
     PidController<float, Config::Ny, Config::Nu>* speed_controller;
     PidController<float, Config::Ny, Config::Nu>* position_controller;
@@ -49,6 +48,7 @@ struct SystemContext {
     volatile float speed_ref;
     volatile float speed_meas;
     volatile float duty_cyle;
+    volatile float position_ref_filtered;
 };
 
 
@@ -68,6 +68,8 @@ void TrajectoryTask(void* pv);
 
 void Module_RegisterButtonTaskHandle(void* handle);
 void Module_RegisterTrajectoryTaskHandle(void* handle);
+void Module_RegisterTrajectoryQueueHandle(void* handle);
+
 void Module_OnButtonExtiFromISR(uint16_t gpio_pin);
 
 #ifdef __cplusplus

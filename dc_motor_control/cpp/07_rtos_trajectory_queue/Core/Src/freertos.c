@@ -140,8 +140,9 @@ void MX_FREERTOS_Init(void) {
 
   /* USER CODE BEGIN RTOS_THREADS */
   /* add threads, ... */
-  Module_RegisterButtonTaskHandle((void*)ButtonTaskHandle);
+  Module_RegisterButtonTaskHandle((void*) ButtonTaskHandle);
   Module_RegisterTrajectoryTaskHandle((void*) TrajectoryTaskHandle);
+  Module_RegisterTrajectoryQueueHandle((void*) TrajectoryQueueHandle);
   /* USER CODE END RTOS_THREADS */
 
 }
@@ -227,10 +228,7 @@ void StartTrajectoryTask(void const * argument)
 {
   /* USER CODE BEGIN StartTrajectoryTask */
   /* Infinite loop */
-  for(;;)
-  {
-    osDelay(1);
-  }
+  TrajectoryTask(Module_GetSystemContext());
   /* USER CODE END StartTrajectoryTask */
 }
 

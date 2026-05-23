@@ -25,15 +25,13 @@ extern "C" void ControlTask(void* pv)
         const EncoderMeasurement encoder_meas =
             ctx->encoder->Sample(Config::kSampleTimeS);
 
-        float point{0};
+        float point = ctx->position_ref_filtered;
+
         if (xQueueReceive(ctx->trajectory_queue, &point, 0) == pdTRUE) {
-            ctx->position_ref = point;
-        }else{
-            point = ctx->position_ref;
+            ctx->position_ref_filtered = point;
         }
 
         // const float temp_ref = ctx->position_ref;
-
         position_ref << point;
         position_meas << encoder_meas.position_rad;
 
@@ -62,7 +60,11 @@ extern "C" void ControlTask(void* pv)
         UVector u_min;
         UVector u_max;
 
-        if (speed_ref(0) < 0.0F) {
+        if (std::abs(speed_ref(0)) < 0.05F) {
+            u_ff << 0.0F;
+            u_min << -1.0F;
+            u_max << 1.0F;
+        } else if (speed_ref(0) < 0.0F) {
             u_ff << -0.2F;
             u_min << -0.8F;
             u_max << 1.2F;

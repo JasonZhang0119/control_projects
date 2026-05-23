@@ -5,7 +5,6 @@
 
 #include <Eigen/Dense>
 
-
 static TaskHandle_t g_button_task_handle = nullptr;
 
 static EncoderReader g_encoder{
@@ -35,10 +34,9 @@ static ButtonManager g_button{
 
 static FixedLengthPositionTrajectory g_trajectory{
     Config::kTrajectoryPoint
-}
+};
 
 static SystemContext g_sys_ctx;
-
 
 static void InitializeSpeedController(void)
 {
@@ -49,7 +47,7 @@ static void InitializeSpeedController(void)
     GainMatrix Ki;
     GainMatrix Kd;
 
-    Kp << 0.01F;
+    Kp << 0.1F;
     Ki << 0.3F;
     Kd << 0.0F;
 
@@ -76,7 +74,7 @@ static void InitializePositionController(void)
     GainMatrix Ki;
     GainMatrix Kd;
 
-    Kp << 2.0F;
+    Kp << 5.0F;
     Ki << 0.0F;
     Kd << 0.0F;
 
@@ -110,35 +108,37 @@ extern "C" void Module_Init(void)
     g_sys_ctx.position_button->Reset();
     g_sys_ctx.motor_driver->Start();
     g_sys_ctx.motor_driver->Stop();
-    g_sys_ctx.trajectory_generator.Reset();
+    g_sys_ctx.trajectory_generator->Reset();
 
     InitializePositionController();
     InitializeSpeedController();
-
-    g_sys_ctx.button_event_queue =
-        xQueueCreate(10, sizeof(ButtonEvent));
 
     g_sys_ctx.position_ref = 0.0F;
     g_sys_ctx.position_meas = 0.0F;
     g_sys_ctx.speed_ref = 0.0F;
     g_sys_ctx.speed_meas = 0.0F;
     g_sys_ctx.duty_cyle = 0.0F;
+    g_sys_ctx.position_ref_filtered = 0.0F;
 }
+
 
 extern "C" void* Module_GetSystemContext(void)
 {
     return static_cast<void*>(&g_sys_ctx);
 }
 
-
 extern "C" void Module_RegisterButtonTaskHandle(void* handle){
     g_button_task_handle = static_cast<TaskHandle_t>(handle);
 }
 
+
+extern "C" void Module_RegisterTrajectoryQueueHandle(void* handle){
+    g_sys_ctx.trajectory_queue = static_cast<QueueHandle_t>(handle);
+}
+
 extern "C" void Module_OnButtonExtiFromISR(uint16_t gpio_pin)
 {
-    if ((g_button_task_handle == nullptr) ||
-        (g_trajectory_task_handle == nullptr)) {
+    if (g_button_task_handle == nullptr) {
         return;
     }
 

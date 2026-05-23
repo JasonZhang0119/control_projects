@@ -17,12 +17,13 @@ extern "C" void LoggerTask(void* pv)
         std::snprintf(
             tx_buf,
             sizeof(tx_buf),
-            "%lu,%ld,%ld,%ld,%ld,%ld\r\n",
+            "%lu,%ld,%ld,%ld,%ld,%ld,%ld\r\n",
             static_cast<unsigned long>(delta),
             static_cast<long>(ctx->speed_ref * 1000.0F),
             static_cast<long>(ctx->speed_meas * 1000.0F),
             static_cast<long>(ctx->position_ref * 1000.0F),
             static_cast<long>(ctx->position_meas * 1000.0F),
+            static_cast<long>(ctx->position_ref_filtered * 1000.0F),
             static_cast<long>(ctx->duty_cyle * 1000.0F)
         );
 

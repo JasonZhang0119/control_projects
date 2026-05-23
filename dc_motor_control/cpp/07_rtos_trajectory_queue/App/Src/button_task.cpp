@@ -2,12 +2,11 @@
 #include "task_wrapper.h"
 #include "main.h"
 
+static TaskHandle_t g_trajectory_task_handle = nullptr;
 
-extern "C" void Module_RegisterTrajectoryTaskHandle(void* handle){
+void Module_RegisterTrajectoryTaskHandle(void* handle){
     g_trajectory_task_handle = static_cast<TaskHandle_t>(handle);
 }
-
-static TaskHandle_t g_trajectory_task_handle = nullptr;
 
 extern "C" void ButtonTask(void* pv)
 {
@@ -46,6 +45,8 @@ extern "C" void ButtonTask(void* pv)
             default:
                 break;
         }
+
+        BaseType_t higher_priority_task_woken = pdFALSE;
         vTaskNotifyGiveFromISR(g_trajectory_task_handle, 
                             &higher_priority_task_woken);
 

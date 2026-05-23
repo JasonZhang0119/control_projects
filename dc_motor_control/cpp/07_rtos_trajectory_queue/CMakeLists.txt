@@ -58,6 +58,9 @@ target_sources(${CMAKE_PROJECT_NAME} PRIVATE
     App/Src/control_task.cpp
     App/Src/button_task.cpp
     App/Src/logger_task.cpp
+    App/Src/trajectory_task.cpp
+
+    Libs/Src/trajectory_generator.cpp
     
     # Add user sources here
 )
