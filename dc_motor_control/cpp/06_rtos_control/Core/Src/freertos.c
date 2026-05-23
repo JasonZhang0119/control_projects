@@ -29,7 +29,7 @@
 #include "string.h"
 #include "stdio.h"
 #include "task_wrapper.h"
-#include "app_bridge.h"
+// #include "app_bridge.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -91,7 +91,6 @@ void vApplicationGetIdleTaskMemory( StaticTask_t **ppxIdleTaskTCBBuffer, StackTy
   */
 void MX_FREERTOS_Init(void) {
   /* USER CODE BEGIN Init */
-
   /* USER CODE END Init */
 
   /* USER CODE BEGIN RTOS_MUTEX */
@@ -129,6 +128,7 @@ void MX_FREERTOS_Init(void) {
 
   /* USER CODE BEGIN RTOS_THREADS */
   /* add threads, ... */
+  Module_RegisterButtonTaskHandle((void*)ButtonTaskHandle);
   /* USER CODE END RTOS_THREADS */
 
 }
@@ -170,7 +170,7 @@ void StartDefaultTask(void const * argument)
 void StartUartTask(void const * argument)
 {
   /* USER CODE BEGIN StartUartTask */
-  LoggerTask(&g_sys_ctx);
+  LoggerTask(Module_GetSystemContext());
   /* USER CODE END StartUartTask */
 }
 
@@ -184,7 +184,7 @@ void StartUartTask(void const * argument)
 void StartControlTask(void const * argument)
 {
   /* USER CODE BEGIN StartControlTask */
-  ControlTask(&g_sys_ctx);
+  ControlTask(Module_GetSystemContext());
   /* USER CODE END StartControlTask */
 }
 
@@ -199,7 +199,7 @@ void StartButtonTask(void const * argument)
 {
   /* USER CODE BEGIN StartButtonTask */
   /* Infinite loop */
-  ButtonTask(&g_sys_ctx);
+   ButtonTask(Module_GetSystemContext());
   /* USER CODE END StartButtonTask */
 }
 

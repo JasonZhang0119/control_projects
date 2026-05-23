@@ -1,187 +1,155 @@
-
-#include "Eigen/Dense"
-
 #include "task_wrapper.h"
 
-#include "button_manager.hpp"
-#include "motor_driver.hpp"
-#include "encoder_reader.hpp"
-#include "pid_controller.hpp"
+#include "usart.h"
+#include "tim.h"
+
+#include <Eigen/Dense>
 
 
-extern "C" void ControlTask(void* pv) {
-    auto* ctx = static_cast<SystemContext*>(pv);
-    // 假设 ControlEngine 内部有 PID 状态
-    ctx->position_controller->Initialize();
-    ctx->speed_controller->Initialize();
-    ctx->encoder->Reset();
-    ctx->motor_driver->Start();
+static TaskHandle_t g_button_task_handle = nullptr;
 
-    using YVector = Eigen::Matrix<float, 1, 1>;
-    using UVector = Eigen::Matrix<float, 1, 1>;
+static EncoderReader g_encoder{
+    &htim3,
+    Config::kEncoderCountsPerRevolution
+};
 
-    YVector speed_ref;
-    YVector speed_meas;
-    YVector position_ref;
-    YVector position_meas;
+static MotorDriver g_motor{
+    &htim2,
+    TIM_CHANNEL_1,
+    MOTOR1_AIN1_GPIO_Port,
+    MOTOR1_AIN1_Pin,
+    MOTOR1_AIN2_GPIO_Port,
+    MOTOR1_AIN2_Pin
+};
 
-    for(;;) {
+static PidController<float, Config::Ny, Config::Nu> g_speed_pid{};
+static PidController<float, Config::Ny, Config::Nu> g_pos_pid{};
+static UartLogger g_logger{&huart1};
 
-        const EncoderMeasurement encoder_meas =
-            ctx->encoder->Sample(Config::kSampleTimeS);
+static ButtonManager g_button{
+    KEY_POSITION_DOWN_GPIO_Port,
+    KEY_POSITION_DOWN_Pin,
+    KEY_POSITION_UP_GPIO_Port,
+    KEY_POSITION_UP_Pin
+};
 
-        float temp_ref = ctx->position_ref; 
-        position_ref << temp_ref;
-        position_meas << encoder_meas.position_rad;
+static SystemContext g_sys_ctx;
 
-        speed_ref << ctx->position_controller->Step(
-                position_ref,
-                position_meas,
-                UVector{-60},
-                UVector{60}
-        );
 
-        if (std::abs(position_ref(0) - position_meas(0)) < 0.1){
-            speed_ref << 0;
-        }
 
-        speed_meas << encoder_meas.rad_per_second;
+static void InitializeSpeedController(void)
+{
+    using GainMatrix =
+        Eigen::Matrix<float, 1, 1>;
 
-        UVector u_ff;
-        UVector u_fb;
-        UVector signed_duty;
-        UVector u_min;
-        UVector u_max;
+    GainMatrix Kp;
+    GainMatrix Ki;
+    GainMatrix Kd;
 
-        if (speed_ref(0)<0){
-            u_ff << -0.2;
-            u_min << -0.8;
-            u_max << 1.2;
-        }else{
-            u_ff << 0.2;
-            u_min << -1.2;
-            u_max << 0.8;
-        }
+    Kp << 0.01F;
+    Ki << 0.3F;
+    Kd << 0.0F;
 
-        u_fb = ctx->speed_controller->Step(
-                speed_ref,
-                speed_meas,
-                u_min,
-                u_max
-            );
-        
-        signed_duty = (u_fb + u_ff) * 1000;
+    g_speed_pid.SetSamplingTime(
+        Config::kSampleTimeS
+    );
 
-        ctx->motor_driver->ApplySignedDuty(signed_duty(0));
+    g_speed_pid.SetGain(
+        Kp,
+        Ki,
+        Kd
+    );
 
-        ctx->position_meas = position_meas(0);
-        ctx->speed_ref = speed_ref(0);
-        ctx->speed_meas = speed_meas(0);
-        
-        vTaskDelay(pdMS_TO_TICKS(10)); // 100Hz 周期
-    }
+    g_speed_pid.Reset();
 }
 
 
-extern "C" void LoggerTask(void* pv) {
+static void InitializePositionController(void)
+{
+    using GainMatrix =
+        Eigen::Matrix<float, 1, 1>;
+
+    GainMatrix Kp;
+    GainMatrix Ki;
+    GainMatrix Kd;
+
+    Kp << 2.0F;
+    Ki << 0.0F;
+    Kd << 0.0F;
+
+    g_pos_pid.SetSamplingTime(
+        Config::kSampleTimeS
+    );
+
+    g_pos_pid.SetGain(
+        Kp,
+        Ki,
+        Kd
+    );
+
+    g_pos_pid.Reset();
+}
+
+extern "C" void Module_Init(void)
+{
+    g_encoder.Start();
+    g_motor.Start();
+
+    g_sys_ctx.encoder = &g_encoder;
+    g_sys_ctx.motor_driver = &g_motor;
+    g_sys_ctx.speed_controller = &g_speed_pid;
+    g_sys_ctx.position_controller = &g_pos_pid;
+    g_sys_ctx.uart_logger = &g_logger;
+    g_sys_ctx.position_button = &g_button;
+
+    g_sys_ctx.encoder->Reset();
+    g_sys_ctx.position_button->Reset();
+    g_sys_ctx.motor_driver->Start();
+    g_sys_ctx.motor_driver->Stop();
+    InitializePositionController();
+    InitializeSpeedController();
+
+    g_sys_ctx.button_event_queue =
+        xQueueCreate(10, sizeof(ButtonEvent));
+
+    g_sys_ctx.position_ref = 0.0F;
+    g_sys_ctx.position_meas = 0.0F;
+    g_sys_ctx.speed_ref = 0.0F;
+    g_sys_ctx.speed_meas = 0.0F;
+    g_sys_ctx.duty_cyle = 0.0F;
+}
+
+extern "C" void* Module_GetSystemContext(void)
+{
+    return static_cast<void*>(&g_sys_ctx);
+}
+
+
+extern "C" void Module_RegisterButtonTaskHandle(void* handle){
+    g_button_task_handle = static_cast<TaskHandle_t>(handle);
+}
+
+extern "C" void Module_OnButtonExtiFromISR(uint16_t gpio_pin)
+{
+    if (g_button_task_handle == nullptr) {
+        return;
+    }
+
+    if ((gpio_pin != KEY_POSITION_UP_Pin) &&
+        (gpio_pin != KEY_POSITION_DOWN_Pin)) {
+        return;
+    }
+
+    g_sys_ctx.position_button->OnExtiInterrupt(gpio_pin);
     
-    auto* ctx = static_cast<SystemContext*>(pv);
-    ctx->uart_logger->SendString("logger task started\r\n");
 
-    uint32_t last_tick = HAL_GetTick();
+    BaseType_t higher_priority_task_woken = pdFALSE;
 
-    char tx_buf[160];
+    vTaskNotifyGiveFromISR(
+        g_button_task_handle,
+        &higher_priority_task_woken
+    );
 
-    for(;;) {
-
-        uint32_t now = HAL_GetTick();
-        uint32_t delta = now - last_tick;
-
-        std::snprintf(
-            tx_buf,
-            sizeof(tx_buf),
-            "%lu,%ld,%ld, %ld,%ld\r\n",
-            static_cast<unsigned long>(delta),
-            static_cast<long>(ctx->speed_ref * 1000.0F),
-            static_cast<long>(ctx->speed_meas * 1000.0F),
-            static_cast<long>(ctx->position_ref * 1000.0F),
-            static_cast<long>(ctx->position_ref * 1000.0F)
-        );
-
-        ctx->uart_logger->SendString(tx_buf);
-        last_tick = now;
-        vTaskDelay(pdMS_TO_TICKS(50)); // 100Hz 周期
-    }
+    portYIELD_FROM_ISR(higher_priority_task_woken);
 }
 
-
-extern "C" void ButtonTask(void* pv) {
-    // 1. 获取上下文
-    auto* ctx = static_cast<SystemContext*>(pv);
-    
-    // 2. 初始日志
-    if (ctx->uart_logger != nullptr) {
-        ctx->uart_logger->SendString("button task started\r\n");
-    }
-
-    ButtonEvent event;
-
-    for(;;) {
-
-        if (xQueueReceive(ctx->button_event_queue, &event, portMAX_DELAY) == pdTRUE) {
-            
-            // 4. 处理获取到的第一个事件
-
-            switch (event)
-            {
-            case ButtonEvent::SpeedUp:
-
-                ctx->position_ref += Config::kPositionRefStepRadS;
-                if(ctx->position_ref > Config::kPositionRefMaxRadS){
-                    ctx->position_ref = Config::kPositionRefMaxRadS;
-                }
-                break;
-
-            case ButtonEvent::SpeedDown:
-                ctx->position_ref -= Config::kPositionRefStepRadS;
-                if (ctx->position_ref < Config::kPositionRefMinRadS){
-                   ctx->position_ref = Config::kPositionRefMinRadS;
-                }
-                break;
-
-            case ButtonEvent::None:
-            default:
-                break;
-            }
-
-            // 5. 快速排空：如果有积压的按键事件，一次性处理完
-            // 使用 uxQueueMessagesWaiting 检查队列是否还有残留
-            while (uxQueueMessagesWaiting(ctx->button_event_queue) > 0) {
-                if (xQueueReceive(ctx->button_event_queue, &event, 0) == pdTRUE) {
-
-                    switch (event)
-                    {
-                    case ButtonEvent::SpeedUp:
-
-                        ctx->position_ref += Config::kPositionRefStepRadS;
-                        if(ctx->position_ref > Config::kPositionRefMaxRadS){
-                            ctx->position_ref = Config::kPositionRefMaxRadS;
-                        }
-                        break;
-
-                    case ButtonEvent::SpeedDown:
-                        ctx->position_ref -= Config::kPositionRefStepRadS;
-                        if (ctx->position_ref < Config::kPositionRefMinRadS){
-                        ctx->position_ref = Config::kPositionRefMinRadS;
-                        }
-                        break;
-
-                    case ButtonEvent::None:
-                    default:
-                        break;
-                    }
-                }
-            }
-        }
-    }
-}

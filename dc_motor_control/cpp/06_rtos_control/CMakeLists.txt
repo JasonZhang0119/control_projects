@@ -49,12 +49,15 @@ target_link_directories(${CMAKE_PROJECT_NAME} PRIVATE
 
 # Add sources to executable
 target_sources(${CMAKE_PROJECT_NAME} PRIVATE
-    App/Src/app_bridge.cpp
     App/Src/encoder_reader.cpp
     App/Src/motor_driver.cpp
     App/Src/uart_logger.cpp
     App/Src/button_manager.cpp
     App/Src/task_wrapper.cpp
+
+    App/Src/control_task.cpp
+    App/Src/button_task.cpp
+    App/Src/logger_task.cpp
     
     # Add user sources here
 )
