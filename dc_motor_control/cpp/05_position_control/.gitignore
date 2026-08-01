@@ -1,0 +1,42 @@
+# CMake build outputs
+build/
+**/build/
+
+CMakeFiles/
+CMakeCache.txt
+cmake_install.cmake
+compile_commands.json
+
+.ninja_deps
+.ninja_log
+build.ninja
+Makefile
+
+.cache/
+.cmake/
+
+# STM32 build artifacts
+*.elf
+*.hex
+*.bin
+*.map
+*.lst
+*.su
+*.o
+*.obj
+*.a
+*.d
+*.srec
+
+# CubeMX backup
+*.ioc.bak
+*.mxproject.bak
+
+# IDE local files
+.project
+.cproject
+.settings/
+Debug/
+Release/
+.vscode/
+
