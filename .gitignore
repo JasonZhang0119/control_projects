@@ -11,4 +11,9 @@ dc_motor_control/tools/FlyMcu.exe
 
 dc_motor_control/doc/
 parallel_mpc_computation/build/
+dc_motor_control/cpp/07_rtos_trajectory_queue/build/
+dc_motor_control/cpp/06_rtos_control/build/
+dc_motor_control/cpp/05_position_control/build/
+dc_motor_control/cpp/04_velocity_control/build/
+dc_motor_control/cpp/03_pwm_open_loop/build/
 control_lib/build/
