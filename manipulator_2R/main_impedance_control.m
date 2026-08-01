@@ -58,9 +58,9 @@ F_env_list(1, t>=1) = 1;
 %% ================================================================
 % 阻抗控制器参数
 % ================================================================
-imp_param.Md = -diag([1.0, 1.0]);
-imp_param.Dd = -diag([1.0, 1.0]);
-imp_param.Kd = -diag([1.0, 1.0]);
+imp_param.Md = diag([1.0, 1.0]);
+imp_param.Dd = diag([1.0, 1.0]);
+imp_param.Kd = diag([1.0, 1.0]);
 
 imp_options = struct();
 imp_options.task_dim = 2;
