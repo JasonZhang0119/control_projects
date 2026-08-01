@@ -16,5 +16,4 @@ dc_motor_control/cpp/06_rtos_control/build/
 dc_motor_control/cpp/05_position_control/build/
 dc_motor_control/cpp/04_velocity_control/build/
 dc_motor_control/cpp/03_pwm_open_loop/build/
-control_lib/build/.cmake/api/v1/reply/target-ALL_BUILD-RelWithDebInfo-9c1d3f36e6757800af31.json
 control_lib/build/

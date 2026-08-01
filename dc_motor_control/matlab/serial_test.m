@@ -1,6 +1,6 @@
 clear; clc;
 
-port = "COM7";
+port = "COM8";
 baudrate = 115200;
 
 sp = serialport(port, baudrate);

@@ -1,0 +1,17 @@
+{
+    "C_Cpp.default.configurationProvider": "ms-vscode.cmake-tools",
+    "C_Cpp.default.intelliSenseMode": "windows-msvc-x64",
+    "C_Cpp.default.cppStandard": "c++17",
+    "C_Cpp.default.includePath": [
+        "${workspaceFolder}/include",
+        "D:/third_party_libs/cpp/eigen-5.0.0",
+        "D:/Software/Programming/MATLAB_R2025b/extern/include",
+        "D:/Software/Programming/MATLAB_R2025b/simulink/include"
+    ],
+    "C_Cpp.default.defines": [
+        "MATLAB_MEX_FILE",
+        "RLS_N_THETA=2"
+    ],
+    "C_Cpp.intelliSenseEngine": "default",
+    "C_Cpp.errorSquiggles": "enabled"
+}
