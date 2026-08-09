@@ -47,7 +47,7 @@ close all;
 %     输出文件名前缀。
 % enable_live_plot : logical
 %     是否启用实时绘图。
-port = "COM8";
+port = "COM7";
 baudrate = 115200;
 duration_s = 30.0;
 output_prefix = "dc_motor_position_speed_control_log";
