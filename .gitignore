@@ -17,3 +17,4 @@ dc_motor_control/cpp/05_position_control/build/
 dc_motor_control/cpp/04_velocity_control/build/
 dc_motor_control/cpp/03_pwm_open_loop/build/
 control_lib/build/
+textbook/adaptive/chapter5/slprj/
