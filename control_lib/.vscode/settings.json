@@ -5,8 +5,8 @@
     "C_Cpp.default.includePath": [
         "${workspaceFolder}/include",
         "D:/third_party_libs/cpp/eigen-5.0.0",
-        "D:/Software/Programming/MATLAB_R2025b/extern/include",
-        "D:/Software/Programming/MATLAB_R2025b/simulink/include"
+        "D:/Software/Programming/MATLAB_R2026a/extern/include",
+        "D:/Software/Programming/MATLAB_R2026a/simulink/include"
     ],
     "C_Cpp.default.defines": [
         "MATLAB_MEX_FILE",

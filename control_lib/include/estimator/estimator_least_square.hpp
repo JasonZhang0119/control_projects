@@ -7,17 +7,18 @@
 #include "typing.hpp"
 
 
-template<typename DataType, int N_theta, int N_measurement>
+template<typename DataType, int N_y, int N_theta, int N_step>
 class LeastSquareEstimator_WeightBatch
 {
 
 public:
 
-    using RegressorMatrix = Matrix<DataType, N_measurement, N_theta>;
+    // 批量加权最小二乘：每步 N_y 个输出，共 N_step 组数据。
+    using RegressorMatrix = Matrix<DataType, N_step * N_y, N_theta>;
     using ParameterVector = Vector<DataType, N_theta>;
-    using MeasurementVector = Vector<DataType, N_measurement>;
-    using WeightVector = Vector<DataType, N_measurement>;
-    using WeightDiagonalMatrix = Eigen::DiagonalMatrix<DataType, N_measurement>;
+    using MeasurementVector = Vector<DataType, N_step * N_y>;
+    using WeightVector = Vector<DataType, N_step * N_y>;
+    using WeightDiagonalMatrix = Eigen::DiagonalMatrix<DataType, N_step * N_y>;
 
 
     const RegressorMatrix& GetRegressor() const{
@@ -46,6 +47,7 @@ public:
     }
 
     void SetWeightVector(const WeightVector& weight_vector){
+        // 权重作为对角矩阵使用，要求非负。
         if ((weight_vector.array() < static_cast<DataType>(0)).any())
         {
             throw std::invalid_argument("Weights must be non-negative.");
@@ -63,7 +65,7 @@ public:
     void Compute() {
         const WeightDiagonalMatrix weight_matrix(this->weight_vector_);
 
-        // Ax = b <=> (A).ldlt().solve(b)
+        // 求解正规方程：(Phi^T W Phi) * theta = Phi^T W y。
         this->parameter_ =
             (this->regressor_.transpose() * weight_matrix * this->regressor_).ldlt().solve(
                 this->regressor_.transpose() * weight_matrix * this->measurement_);
@@ -80,64 +82,79 @@ private:
 };
 
 
-template<typename DataType, int N_theta>
-class GrandientEstimator_Standard{
+
+template<typename DataType, int N_y, int N_theta>
+class LeastSquareEstimator_RecursiveStandard
+{
+
 public:
 
-
-    using RegressorVector = Vector<DataType, N_theta>;
+    // 批量加权最小二乘：每步 N_y 个输出，共 N_step 组数据。
+    using RegressorMatrix = Matrix<DataType, N_y, N_theta>;
     using ParameterVector = Vector<DataType, N_theta>;
+    using MeasurementVector = Vector<DataType, N_y>;
+
+    using PMatrix = Matrix<DataType, N_theta, N_theta>;
 
 
-    const RegressorVector& GetRegressor() const{
+    const RegressorMatrix& GetRegressor() const{
         return this->regressor_;
 
     }
+
+    const MeasurementVector& GetMeasurement() const {
+        return this->measurement_;
+    }
+
 
     const ParameterVector& GetParameter() const{
         return this->parameter_;
     }
 
-    const float GetTs() const{
-        return this->Ts_;
-    }
-
-    void SetRegressor(const RegressorVector& regressor){
+    void SetRegressor(const RegressorMatrix& regressor){
         this->regressor_ = regressor;
     }
 
-    void SetMeasurement(const RegressorVector& measurement){
+    void SetMeasurement(const MeasurementVector& measurement){
         this->measurement_ = measurement;
     }
 
-    void SetTs(const float Ts){
-        this->Ts_ = Ts;
-    }
 
     void Reset(){
         this->regressor_.setZero();
+        
         this->parameter_.setZero();
+        this->dot_parameter_.setZero();
+
+        this->P_.setZero();
+        this->dot_P_.setZero();
+
         this->measurement_.setZero();
     }
 
-    void Compute(){
+    void Compute() {
 
-        this->
+        this->dot_parameter_ = - this->gamma_ * this->P_ * this->regressor_ *
+                                (this->regressor_.transpose() * this->parameter_ - this->measurement_);
+        this->dot_P_ = this->gamma_ * this->P_ * (this->lambda_ * this->P_ - this->regressor_ * this->regressor_.transpose() * this->P_);
 
+        this->parameter_ += this->dot_parameter_ * this->Ts_;
+        this->P_ += this->dot_P_ * this->Ts_;
     }
 
-
-
-
-
+    
 private:
 
-
-    RegressorVector regressor_{RegressorVector::Zero()};
+    RegressorMatrix regressor_{RegressorMatrix::Zero()};
     ParameterVector parameter_{ParameterVector::Zero()};
     ParameterVector dot_parameter_{ParameterVector::Zero()};
-    float Ts_{0};
+    MeasurementVector measurement_{MeasurementVector::Zero()};
 
-}
+    PMatrix P_{PMatrix::Identity()};
+    PMatrix dot_P_{PMatrix::Zero()};
 
+    float Ts_{1.0F};
+    float gamma_{1.0F};
+    float lambda_{1.0F};
 
+};
